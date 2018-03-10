@@ -1,0 +1,27 @@
+{
+  "name": "socket-cli",
+  "version": "1.0.0",
+  "description": "Socket Cli chat client",
+  "main": "app.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/derrekmc/socket-cli.git"
+  },
+  "author": "Derrek Cordova",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/derrekmc/socket-cli/issues"
+  },
+  "homepage": "https://github.com/derrekmc/socket-cli#readme",
+  "dependencies": {
+    "socket.io-client": "^2.0.4",
+    "winston": "^0.8.3"
+  }
+}
