@@ -10,6 +10,7 @@ global.log = require("./src/lib/logger");
 process.stdout.write("connecting....");
 
 var client = new net.Socket();
+
 client.connect(9432, '35.188.0.214', function() {
     process.stdout.write("connected");
     client.write('{"name":"derrek"}');
@@ -23,7 +24,8 @@ client.on('data', function(data) {
     console.log('Received: ' + data);
     //client.destroy(); // kill client after server's response
     if(IsJsonString(data)){
-        log.info(data);
+        //log.info(data);
+        //console.log(data);
         
         
         let obj = JSON.parse(data);
@@ -34,9 +36,8 @@ client.on('data', function(data) {
                 break;
             
             case 'msg':
-                console.log('**************************  ' + obj.type + '  **************************');
-                console.log('{"request":"count"}');
-                //client.write('{"request":"count"}');
+                console.log(obj.sender + ": ",obj.msg);
+                client.write('{"request":"count"}');
                 break;
             
             case 'error':

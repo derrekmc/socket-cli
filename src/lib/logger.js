@@ -3,7 +3,7 @@
  * http://en.wikipedia.org/wiki/Syslog#Severity_levels
  */
 var winston = require('winston');
-const log = new (winston.Logger)({
+const adapter = new (winston.Logger)({
     transports: [
         new (winston.transports.Console)({
             level: 'verbose',
@@ -14,4 +14,6 @@ const log = new (winston.Logger)({
     ]
 });
 
-module.exports = log;
+module.exports = adapter;
+//module.exports.winston = adapter;
+
