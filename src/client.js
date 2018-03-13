@@ -26,7 +26,7 @@ class Client{
         
         this.netConnection.connect(port, host, function () {
           
-            console.log("connected");
+        
         });
         
         this.connectionAttempts = 0;
@@ -84,7 +84,7 @@ class Client{
         });
     
         
-        //process.stdout.write("..");
+        process.stdout.write("..");
         
     }
     
@@ -103,16 +103,13 @@ class Client{
     }
     
     __onUpdateView(viewHandle, data) {
-        
-        
         //log.info('__onUpdateView', viewHandle);
         
         this.currentView.handle = viewHandle || this.currentView.handle;
         this.currentView.data = data || this.currentView.data;
         
-        //viewHandle = this.currentView.handle;
-        //data = this.currentView.data;
-        
+        viewHandle = this.currentView.handle;
+        data = this.currentView.data;
         
         switch (viewHandle) {
             
@@ -128,9 +125,17 @@ class Client{
             
             case 'welcome':
                 //console.log("Welcome", data);
-                this.dialog(data.msg, 'authenticated');
-                this.prompt("Press any key to continue..");
+                this.view(data.msg, 'authenticated');
+                this.header("Use these commands to do queries on the API");
+                this.print("/count - Get to the number of requests on this worker");
+                this.print("/time - time to see what time it is");
+                this.print("/chat - to join a live chat room");
+                this.print("/menu - to return to this menu");
+                this.print("");
+                this.prompt("#");
                 this.loggedIn = true;
+                //var payLoad = '{"type":"' + SOCKET_EVENT.MSG + '","msg":"@all - "' + this.name + ' just joined the chat!"}'.replace(/\n/g, '');
+                //this.send(payLoad);
                 break;
             
             case 'msg':
@@ -144,16 +149,6 @@ class Client{
                 
                 this.print("/count");
                 this.print("/time");
-                
-                this.prompt("#");
-                if (IsJsonString(data)) {
-                    var payLoad = data;//.replace(/\n/g,'');
-                    this.send(payLoad);
-                    this.prompt("#");
-                } else {
-                    var payLoad = '{"type":"' + SOCKET_EVENT.MSG + '","msg":"' + data + '"}'.replace(/\n/g, '');
-                    this.send(payLoad);
-                }
                 
                 break;
             
@@ -202,7 +197,7 @@ class Client{
             payLoad = obj;
             this.updateView(obj.type, obj);
             
-            this.prompt("you");
+            this.prompt(" ");
         }else{
             payLoad = {
                 type: SOCKET_EVENT.MSG,
@@ -213,7 +208,7 @@ class Client{
             };
             process.stdout.write('\n ---- ' + payLoad.date + ' | ' + payLoad.sender + ': ' + payLoad.msg + ' ');
             this.send(payLoad);
-            this.prompt("you");
+            this.prompt(" ");
         }
     
        
