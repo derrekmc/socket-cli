@@ -179,7 +179,7 @@ class Client{
     onInput(data){
         
         // if(!this.login(data)){
-             //log.info("Please log in");
+             log.info("Please log in");
         // }
     
         if(this.login(data)){

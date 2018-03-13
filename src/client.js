@@ -1,7 +1,8 @@
-#!/usr/bin/env node
+
 "use strict";
 const pkg = require("../package");
 const net = require('net');
+
 
 const SOCKET_EVENT = require('./events/SocketEvent');
 
@@ -10,7 +11,7 @@ class Client{
     constructor(port, host){
         let __ = this;
         
-        this.heartbeat;
+        this.heartbeatInterval;
         this.port = this.port || port;
         this.host = this.host || host;
         
@@ -24,8 +25,8 @@ class Client{
         }, 8000);
         
         this.netConnection.connect(port, host, function () {
-            //console.log("connected");
-            
+          
+            console.log("connected");
         });
         
         this.connectionAttempts = 0;
@@ -42,7 +43,8 @@ class Client{
         });
     
         this.netConnection.on(SOCKET_EVENT.END, function() {
-            __.view('END Received', SOCKET_EVENT.END);
+            log.error('end');
+            __.view('Exit', SOCKET_EVENT.END, 'exit');
         });
         
         this.netConnection.on(SOCKET_EVENT.ERROR, function(err) {
@@ -72,46 +74,200 @@ class Client{
             if(IsJsonString(data)){
                 
                 let obj = JSON.parse(data);
-                if(obj.type != "heartbeat")  __.print('onData: ' + data);
-                
-                switch(obj['type']){
-                    
-                    case 'heartbeat':
-                        break;
-                    
-                    case 'welcome':
-                        __.view(obj.msg, 'authenticated');
-                        __.prompt("Press any key to continue..");
-                        __.loggedIn = true;
-                        break;
-                    
-                    case 'msg':
-                        // if(typeof obj.msg == 'object') {
-                        //     console.log(obj.sender + ": " + obj["msg"].msg);
-                        //     return;
-                        // }
-                        __.view(obj.sender + ": " + obj["msg"].msg, 'chat');
-                        __.prompt('you');
-                        break;
     
-                    case 'error':
-                        __.view("Error: " + obj.msg || data, "Error");
-                        __.prompt("Press any key to continue..");
-                        break;
-                    
-                    default:
-                        __.print('obj: ' + obj);
-                        log.warn('No formatting specified for type:', obj.type);
-                        
+                if(obj['type'] != "heartbeat")  {
+                    //log.verbose('onData: ' + data);
+                    __.updateView(obj['type'], obj);
                 }
                 
             }
         });
+    
         
-        
-        process.stdout.write("..");
+        //process.stdout.write("..");
         
     }
+    
+    updateView(viewHandle, data){
+        //log.verbose('updateView', viewHandle, data);
+        if(!viewHandle) {
+            log.error('Error in updateView(viewHandle). No viewHandle passed.');
+            return false;
+        }
+        viewHandle = viewHandle || this.currentView.handle;
+        
+        this.currentView.handle = viewHandle;
+        this.currentView.data = data;
+        
+        this.__onUpdateView(viewHandle, data);
+    }
+    
+    __onUpdateView(viewHandle, data) {
+        
+        
+        //log.info('__onUpdateView', viewHandle);
+        
+        this.currentView.handle = viewHandle || this.currentView.handle;
+        this.currentView.data = data || this.currentView.data;
+        
+        //viewHandle = this.currentView.handle;
+        //data = this.currentView.data;
+        
+        
+        switch (viewHandle) {
+            
+            case 'login':
+                if (this.login(data)) {
+                    if (IsJsonString(data)) {
+                        this.send(data);
+                    } else {
+                        log.warn("Please enter your name to continue");
+                    }
+                }
+                break;
+            
+            case 'welcome':
+                //console.log("Welcome", data);
+                this.dialog(data.msg, 'authenticated');
+                this.prompt("Press any key to continue..");
+                this.loggedIn = true;
+                break;
+            
+            case 'msg':
+                this.printf('\n - ' + data.date + ' | ' + data.sender + ': ' + data.msg.msg + '');
+                this.prompt("");
+                break;
+            
+            case 'authenticated':
+                //console.log('VIEW', viewHandle);
+                this.view("Socket Cli - COMMANDS", "chat");
+                
+                this.print("/count");
+                this.print("/time");
+                
+                this.prompt("#");
+                if (IsJsonString(data)) {
+                    var payLoad = data;//.replace(/\n/g,'');
+                    this.send(payLoad);
+                    this.prompt("#");
+                } else {
+                    var payLoad = '{"type":"' + SOCKET_EVENT.MSG + '","msg":"' + data + '"}'.replace(/\n/g, '');
+                    this.send(payLoad);
+                }
+                
+                break;
+            
+            case 'error':
+                this.view("Error", "error");
+                this.dialog(data.result);
+                
+                this.prompt("#");
+                break;
+            
+            case 'exit':
+                this.view("Application Quit", "exit");
+                break;
+            
+            default:
+                
+                this.view("No View Specified");
+                
+                this.print("/count");
+                this.print("/time");
+                
+                this.prompt("#");
+                this.send(payLoad);
+            
+            
+            
+        }
+        
+    }
+    
+    onInput(data){
+        
+        //log.info("onInput", data);
+    
+        data = this.sanitize(data);
+        
+        //Object.assign(dto, data);
+        
+        let payLoad = data;
+        let obj = {};
+        
+        if(IsJsonString(data)) {
+            //log.info("onInput", data);
+            this.send(payLoad);
+            obj = JSON.parse(data);
+            payLoad = obj;
+            this.updateView(obj.type, obj);
+            
+            this.prompt("you");
+        }else{
+            payLoad = {
+                type: SOCKET_EVENT.MSG,
+                msg: data,
+                sender: this.name,
+                id: this.name,
+                date: new Date().toLocaleTimeString()
+            };
+            process.stdout.write('\n ---- ' + payLoad.date + ' | ' + payLoad.sender + ': ' + payLoad.msg + ' ');
+            this.send(payLoad);
+            this.prompt("you");
+        }
+    
+       
+        
+        
+    }
+    
+    send(data){
+        /**
+         * Check for empty string or null
+         */
+        if(!data) {
+            this.splash('Nothing to send');
+            return;
+        }
+        if(!data || data == "" || data === null || data==='\n') {
+            return false;
+        }
+        
+        
+        
+        // if(IsJsonString(data)){
+        //     let payLoad = data;
+        //     //payLoad = data.replace(/\n/g,'');
+        //     this.send(payLoad);
+        //     this.prompt("#");
+        //     this.netConnection.write(payLoad);
+        // }else{
+        //     let payLoad = '{"type":"'+SOCKET_EVENT.MSG+'","id":"'+data+'"}'.replace(/\n/g,'');
+        //     payLoad = payLoad.replace(/\n/g,'');
+        //     this.send(payLoad);
+        //     this.prompt("#");
+        //     this.netConnection.write(payLoad);
+        // }
+        
+        
+        this.netConnection.write(JSON.stringify(data));
+        //log.info('send: ' + data);
+    }
+    
+    sanitize(input){
+        return input.replace(/\n/g,'');
+    }
+    
+    printc(data){
+        if(data['msg'] && data['msg']['msg']){
+            process.stdout.write('\n' + data['date'] + ' | ' + data['sender'] + ': ' + data['msg']['msg'] + '');
+        }else{
+            process.stdout.write('\n' + new Date().toLocaleTimeString() + ' | ' + this.name + ': ' + data.msg + '');
+        }
+    }
+    
+    
+    
     
     onConnect(){
     
@@ -119,8 +275,9 @@ class Client{
     }
     
     login(name){
+        name = name.replace(/\n/g,'');
         if(!name) {
-            this.alert('No name passed to login');
+            //this.alert('No name passed to login');
             return false;
         }
         
@@ -177,7 +334,10 @@ class Client{
     }
     
     clear(){
-        process.stdout.write('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n');
+        process.stdout.write(
+            '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n' +
+            '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n');
+            
     }
     
     alert(message){
@@ -188,7 +348,7 @@ class Client{
     }
     
     prompt(message, variable){
-        process.stdout.write(message + ': ' );
+        process.stdout.write('\n'+message + ': ' );
     }
     
     printf(message){
@@ -199,109 +359,7 @@ class Client{
         process.stdout.write('\n'+message+ '');
     }
     
-    onInput(data){
     
-        switch(this.currentView.handle){
-            
-            case 'login':
-                if(this.login(data)){
-                    if(IsJsonString(data)){
-                        this.send(data);
-                    }else{
-                        log.warn("Please enter your name to continue");
-                    }
-                }
-                break;
-    
-            case 'chat':
-                this.view("Socket Cli - Chat", "chat");
-                // this.dialog("Enter JSON amd Hit enter to send");
-                //this.prompt(this.name);
-                this.prompt("}{");
-                if(IsJsonString(data)){
-                    var payLoad = data;//.replace(/\n/g,'');
-                    this.send(payLoad);
-                    this.prompt("#");
-                }else{
-                    var payLoad = '{"type":"'+SOCKET_EVENT.MSG+'","msg":"'+data+'"}'.replace(/\n/g,'');
-                    this.send(payLoad);
-                }
-    
-                break;
-    
-            case 'authenticated':
-                this.view("Socket Cli - COMMANDS", "chat");
-
-                this.print("/count");
-                //this.print("/count");
-
-                this.prompt("#");
-                if(IsJsonString(data)){
-                    var payLoad = data;//.replace(/\n/g,'');
-                    this.send(payLoad);
-                    this.prompt("#");
-                }else{
-                    var payLoad = '{"type":"'+SOCKET_EVENT.MSG+'","msg":"'+data+'"}'.replace(/\n/g,'');
-                    this.send(payLoad);
-                }
-                
-                break;
-    
-            case 'error':
-                this.view("Error","error");
-                this.dialog("Enter JSON amd Hit enter to send");
-                //this.prompt(this.name);
-                this.prompt("");
-                if(IsJsonString(data)){
-                    this.send(data);
-                    this.prompt("#");
-                }else{
-                    //log.warn("ONLY JSON ACCEPTED");
-                }
-        
-                break;
-                
-            default:
-                this.view("Socket Cli - Chat");
-                // this.dialog("Enter JSON amd Hit enter to send");
-                //this.prompt(this.name);
-                this.prompt("you");
-                if(IsJsonString(data)){
-                    var payLoad = data;//.replace(/\n/g,'');
-                    this.send(payLoad);
-                    this.prompt("#");
-                }else{
-                    var payLoad = '{"type":"'+SOCKET_EVENT.MSG+'","msg":"'+data+'"}'.replace(/\n/g,'');
-                    this.send(payLoad);
-
-                }
-                break;
-        }
-        
-        
-        
-    }
-    
-    send(data){
-        /**
-         * Check for empty string or null
-         */
-        if(!data){
-            this.splash('Nothing to send');
-            return;
-        }
-    
-        if(!data || data == "" || data === null || data==='\n') {
-            //this.print("JSON: ");
-            return false;
-        }
-    
-        //this.printf('<-o | ' + data);
-        this.netConnection.write(data);
-        
-        //this.printf('<-o |' + data);
-        
-    }
     
     onError(err){
         log.error(err);
@@ -325,6 +383,56 @@ class Client{
         this.loggedIn = false;
     }
     
+}
+
+global.isFunction = function isFunction(functionToCheck) {
+    var getType = {};
+    if(functionToCheck) return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+};
+
+global.isArray = function isArray(arrayToCheck) {
+    var getType = {};
+    if(arrayToCheck) return arrayToCheck && getType.toString.call(arrayToCheck) === '[object Array]';
+};
+
+global.requiredFields = function requiredFields(object, requiredFieldsArray, callback){
+    if(!callback) callback = function(){};
+    if(isArray(requiredFieldsArray)) {
+        var foundFields = new Array();
+        for(var i in object){
+            for(var j in requiredFieldsArray){
+                if(i == requiredFieldsArray[j]){
+                    foundFields.push(requiredFieldsArray[j]);
+                }
+            }
+        }
+        if(foundFields.length == requiredFieldsArray.length){
+            callback(null);
+            return null;
+        }else{
+            //var diff = _.difference(object, requiredFieldsArray);
+            var error = "Missing one of the required fields(" + requiredFieldsArray.toString() + ")\n Fields Found: (" + foundFields.toString() + ")";
+            callback(error);
+            return error;
+        }
+    }else{
+        var error = "requireFields param 2 is not an Array";
+        if(isFunction(callback)) callback(error);
+        return error;
+    }
+    
+};
+
+global.objectValue = function valueFromObject(object, field){
+    if(object){
+        if(object.hasOwnProperty(field)){
+            return object[field];
+        }else{
+            return false;
+        }
+    }else{
+        return false;
+    }
 }
 
 function IsJsonString(str) {
