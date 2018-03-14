@@ -151,6 +151,36 @@ describe('of Acceptance Criteria - Your program should demonstrate the following
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function jsonToObject(str) {
     let object;
     try {
@@ -161,10 +191,6 @@ function jsonToObject(str) {
     return object;
 }
 
-
-
-
-
 function IsJsonString(str) {
     try {
         JSON.parse(str);
@@ -174,15 +200,7 @@ function IsJsonString(str) {
     return true;
 }
 
-
-
-
-
-
-
 process.on('SIGINT', function () {
     console.info('Got a SIGINT. Goodbye cruel world');
     process.exit(0);
 });
-
-

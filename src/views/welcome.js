@@ -15,11 +15,9 @@ module.exports = {
         cliv.print("/chat - to join a live chat room");
         cliv.print("/welcome - to return to WELCOME menu");
         cliv.print("/exit - to quite the program");
-    
-    
+        
         cliv.print("");
         cliv.prompt("#");
-    
         
         cliv.session.loggedIn = true;
     }

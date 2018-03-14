@@ -44,21 +44,18 @@ class Client {
         socket.on(SOCKET_EVENT.CONNECT, function() {
             clearTimeout(NetConnection.connectionTimeout);
             process.stdout.write('..connected\n-------------------------------------------\n\n');
-            //log.info("connected");
+            
             views.pipe("login", {
                 host: host,
                 port: port
             });
-            // let payLoad = {name:"derrek"};
-            // socket.send({name:"derrek"});
+            
         });
-    
         
         NetConnection.on(SOCKET_EVENT.DATA, function(data) {
             // clean up data, events, flow because the server is sending garbage
             data = data.toString();
             let chunks = data.split('\n');
-
             chunks.forEach(function(chunk, index, list){
                 //console.log("chunk",chunk);
                 if(data && data.type && data.type === 'heartbeat') return;
@@ -70,13 +67,13 @@ class Client {
                 }
             });
         });
+        
         socket.on(SOCKET_EVENT.DATA, function (data) {
             if(data && data.type && data.type !== 'heartbeat') {
                 views.pipe(data.type, data);
                 message.emit(data.type, data);
             }
         });
-    
     
         socket.send = function(data){
             /**
@@ -99,9 +96,8 @@ class Client {
     
             chunks.forEach(function(chunk, index, list){
                 //console.log("chunk",chunk);
-                //let part = helper.jsonToObject(chunk);
                 if(chunk) {
-                    NetConnection.write(chunk + '\n\0');
+                    NetConnection.write(chunk + '\n');
                 }else{
                     //console.log("could not parse", chunk,index, list);
                 }
@@ -119,11 +115,9 @@ class Client {
     
         message.on(MESSAGE_EVENT.WELCOME, function (data) {
             //log.info(MESSAGE_EVENT.WELCOME, data);
-            //socket.send({request:"time"});
         });
         message.on(MESSAGE_EVENT.MESSAGE, function (data) {
             //console.log(data.msg);
-            //cliv.print(data.date + " - " + data.sender +": " + data.msg.random + data.msg.time)
         });
         message.on(MESSAGE_EVENT.ERROR, function (err) {
             log.error(MESSAGE_EVENT.ERROR, err);
@@ -158,6 +152,7 @@ class Client {
                     MESSAGE_EVENT.COUNT,
                     MESSAGE_EVENT.TIME
                 ];
+                
                 if(requests.indexOf(request) != -1){
                     cliv.request(request);
                     socket.send({request:request});
@@ -165,7 +160,6 @@ class Client {
                     cliv.alert('Invalid request');
                     cliv.prompt("#");
                 }
-                
                 
             }else{
                 payLoad = {
@@ -175,7 +169,6 @@ class Client {
                     id: cliv.session.name,
                     date: new Date().toLocaleTimeString()
                 };
-                //cliv.print('\n'  + '' + payLoad.date +' - ' +cliv.session.name + ': ' + payLoad.msg + ' ');
                 
                 cliv.printf(payLoad.date +' ' + cliv.session.name + ': ');
                 socket.send(payLoad);
@@ -187,33 +180,23 @@ class Client {
     }
     
     login(name){
+        
         name = helper.sanitize(name);
         if(!name) {
-            //this.alert('No name passed to login');
             return false;
         }
         
         if(cliv.session.loggedIn) return true;
-        
         this.name = name;
-    
         cliv.session.name = name;
-        
-        this.NetConnection.write('{"name":"'+name+'"}' + '\n\0');
-        
-        
-        //log.info(name + " paste some json and hit enter to send a request");
-        
+        this.NetConnection.write('{"name":"'+name+'"}' + '\n');
     }
     
     deconstructor(){
-        //NetConnection.destroy();
+        this.NetConnection.destroy();
         cliv.exit();
     }
     
-    
-    
-};
+}
 
-//const client = new Client();
 module.exports = Client;

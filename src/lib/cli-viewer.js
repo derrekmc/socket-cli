@@ -1,6 +1,6 @@
 "use strict";
 let Session = {
-    name: "John",
+    name: "",
     loggedIn: false
 };
 
