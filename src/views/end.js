@@ -1,9 +1,8 @@
 const cliv = require("../lib/cli-viewer");
 module.exports = {
-    title: "Count Results",
-    handle: "count",
+    title: "Socket Closed",
+    handle: "close",
     index: function (data) {
-        log.info("Count!");
-        cliv.alert(this.title, data.count);
+        cliv.alert("Socket Closed");
     }
 };

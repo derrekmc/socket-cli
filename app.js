@@ -14,9 +14,9 @@ process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
 process.stdin.on('data', function(data){
-    //if(client.login(data)){
+    if(client.login(data)){
         client.onInput(data);
-    //}
+    }
 });
 
 process.on('SIGINT', function () {

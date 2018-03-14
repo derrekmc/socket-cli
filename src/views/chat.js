@@ -3,19 +3,23 @@ module.exports = {
     title: "Welcome to live cli chat",
     handle: "chat",
     index: function (data) {
+        
         if(data.msg) this.title = data.msg;
         cliv.view(this.title, this.handle);
-        cliv.print("Use these commands to do queries on the API");
-        cliv.print("Enter valid json to send a query directly or");
-        cliv.header("Use the  following predefined requests:");
+        
+        cliv.print("Just type something and if someone is");
+        cliv.print("in the room they'll reply. \nThats it!");
+        
+        cliv.header("Use the commands to navigate around:");
     
         
-        cliv.print("/menu - to return to cliv menu");
-        cliv.print("/exit - to return to cliv exit");
+        cliv.print("/welcome - to return to the welcome screen");
+        cliv.print("/menu - to return to the main menu");
+        cliv.print("/exit - to return to exit the program");
     
     
         cliv.print("");
-        cliv.prompt("#");
+        cliv.prompt("type");
         
     }
 };

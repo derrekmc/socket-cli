@@ -4,6 +4,7 @@ module.exports = {
     handle: "welcome",
     index: function (data) {
         if(data.msg) this.title = data.msg;
+        
         cliv.view(this.title, this.handle);
         cliv.print("Use these commands to do queries on the API");
         cliv.print("Enter valid json to send a query directly or");
@@ -18,7 +19,8 @@ module.exports = {
     
         cliv.print("");
         cliv.prompt("#");
-        cliv.loggedIn = true;
+    
+        
         cliv.session.loggedIn = true;
     }
 };

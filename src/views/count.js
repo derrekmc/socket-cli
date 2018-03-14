@@ -3,6 +3,8 @@ module.exports = {
     title: "Count Results",
     handle: "count",
     index: function (data) {
-            cliv.alert('Count:' + data.count);
+        if(cliv.session.name == data.msg.sender) {
+            cliv.alert('Xount:' + data.count);
+        }
     }
 };

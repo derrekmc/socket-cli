@@ -515,5 +515,5 @@ function jsonToObject(str) {
     }
     return object;
 }
-//const client = new Client();
+const client = new Client();
 module.exports = Client;
