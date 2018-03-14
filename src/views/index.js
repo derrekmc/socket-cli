@@ -1,5 +1,11 @@
 module.exports = {
     pipe: function(viewName, data){
-        return require('./' + viewName).index(data);
+        try{
+            let view = require('./' + viewName).index(data);
+            return view;
+        }catch (e){
+            return false;
+        }
+        
     }
 };

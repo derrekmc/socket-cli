@@ -21,6 +21,9 @@ class Client {
         
         let __ = this;
     
+        this.host = host;
+        this.port = port;
+        
         let NetConnection = new net.Socket();
         let EventEmitter = require('events');
     
@@ -30,23 +33,31 @@ class Client {
         class MessageEmitter extends EventEmitter {}
         let message = new MessageEmitter();
     
-        NetConnection.connectionTimeout = setTimeout(function(){
-            __.onTimeout();
-        }, 8000);
+        //this.connect(port, host);
     
-        NetConnection.connect(9432, '35.188.0.214', function() {
-            socket.emit(SOCKET_EVENT.CONNECT);
-        });
+        this.NetConnection = NetConnection;
+        this.socket = socket;
+    
+        this.maxConnectionAttempts = 20;
+        this.connectionAttempts = 0;
+        
+        // NetConnection.connectionTimeout = setTimeout(function(){
+        //     __.onTimeout();
+        // }, 8000);
+        //
+        // NetConnection.connect(port, host, function() {
+        //     socket.emit(SOCKET_EVENT.CONNECT);
+        // });
+       
+        this.connect(port, host);
         
         socket.on(SOCKET_EVENT.CONNECT, function() {
             clearTimeout(NetConnection.connectionTimeout);
             process.stdout.write('..connected\n-------------------------------------------\n\n');
-            
             views.pipe("login", {
                 host: host,
                 port: port
             });
-            
         });
         
         NetConnection.on(SOCKET_EVENT.DATA, function(data) {
@@ -79,14 +90,11 @@ class Client {
             /**
              * Check for empty string or null
              */
-            if(!data) {
-                cliv.splash('Nothing to send');
-                return;
-            }
             if(!data || data === "" || data === null || data==='\n') {
+                cliv.splash('Nothing to send');
                 return false;
             }
-            //log.info('send', content);
+            
             if(typeof data === 'object') {
                 data.id = cliv.session.name;
             }
@@ -107,27 +115,36 @@ class Client {
         
         NetConnection.on('close', function() {
             log.error('connection closed');
+            this.reconnect();
         });
     
         NetConnection.on('error', function(err) {
-            log.error('connection error', err);
+            log.error('connection error', err)
+            this.reconnect();
+        });
+
+        NetConnection.on('end', function() {
+            log.error('end program received');
+            this.reconnect();
         });
     
-        message.on(MESSAGE_EVENT.WELCOME, function (data) {
-            //log.info(MESSAGE_EVENT.WELCOME, data);
-        });
-        message.on(MESSAGE_EVENT.MESSAGE, function (data) {
-            //console.log(data.msg);
-        });
-        message.on(MESSAGE_EVENT.ERROR, function (err) {
-            log.error(MESSAGE_EVENT.ERROR, err);
-        });
+        // message.on(MESSAGE_EVENT.WELCOME, function (data) {
+        //     //log.info(MESSAGE_EVENT.WELCOME, data);
+        // });
+        // message.on(MESSAGE_EVENT.MESSAGE, function (data) {
+        //     //console.log(data.msg);
+        //     //if(data.request) views.pipe(data.request, data);
+        //     //if(data.count) views.pipe(MESSAGE_EVENT.COUNT, data);
+        // });
+        // message.on(MESSAGE_EVENT.ERROR, function (err) {
+        //     cliv.alert(MESSAGE_EVENT.ERROR + ' ' + err);
+        // });
         
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-        process.stdin.on('data', function(data){
-        
-        });
+        // process.stdin.resume();
+        // process.stdin.setEncoding('utf8');
+        // process.stdin.on('data', function(data){
+        //
+        // });
         
         this.NetConnection = NetConnection;
         this.socket = socket;
@@ -146,6 +163,7 @@ class Client {
             this.socket.send(obj);
             obj = JSON.parse(data);
             payLoad = obj;
+            cliv.request();
             cliv.prompt("#");
         
         }else if(data.indexOf("/")!=-1){
@@ -186,6 +204,46 @@ class Client {
                 cliv.prompt("#");
             }
             this.socket.send(payLoad);
+        }
+    }
+    
+    disconnect() {
+        this.reconnect();
+    }
+    
+    onTimeout() {
+        cliv.alert('x - Connection timed out');
+    
+    }
+    
+    connect(port, host){
+        let __ = this;
+        
+        __.connectionTimeout = setTimeout(function(){
+            __.onTimeout();
+        }, 8000);
+        
+        __.NetConnection.connect(port, host, function() {
+            clearTimeout(__.reconnectTimer);
+            clearTimeout(__.connectionTimeout);
+            __.socket.emit(SOCKET_EVENT.CONNECT);
+        })
+        
+    }
+    
+    reconnect(){
+        let __ = this;
+        if(this.connectionAttempts < this.maxConnectionAttempts){
+            
+            this.connectionAttempts++;
+    
+            if(this.connectionAttempts > 2) cliv.alert("Attempting #" + this.connectionAttempts + " to reconnect");
+            
+            this.reconnectTimer = setTimeout(function () {
+                _.connect(this.port, this.host);
+            }, 5000);
+        }else{
+            this.disconnect();
         }
     }
     

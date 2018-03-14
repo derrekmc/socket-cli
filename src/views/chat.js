@@ -1,6 +1,6 @@
 const cliv = require("../lib/cli-viewer");
 module.exports = {
-    title: "WELCOME to live cli chat",
+    title: "Welome to Socket-Cli Live Chat",
     handle: "chat",
     index: function (data) {
         
@@ -12,12 +12,12 @@ module.exports = {
         
         cliv.header("Use the commands to navigate around:");
         
-        cliv.print("/WELCOME - to return to the WELCOME screen");
+        cliv.print("/welcome - to return to the WELCOME screen");
         
         cliv.print("/exit - to return to exit the program");
         
         cliv.print("");
-        cliv.prompt("type");
+        cliv.prompt(cliv.session.date() + ' ' + cliv.session.name);
         
         cliv.session.chatEnabled = true;
     }

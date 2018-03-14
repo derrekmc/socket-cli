@@ -2,7 +2,10 @@
 let Session = {
     name: "",
     loggedIn: false,
-    chatEnabled: false
+    chatEnabled: false,
+    date: function(){
+        return new Date().toLocaleTimeString();
+    }
 };
 
 var cliViwer = {
