@@ -1,7 +1,8 @@
 "use strict";
 let Session = {
     name: "",
-    loggedIn: false
+    loggedIn: false,
+    chatEnabled: false
 };
 
 var cliViwer = {

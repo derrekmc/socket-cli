@@ -5,8 +5,6 @@ const pkg = require("./package");
 const net = require('net');
 const cliv = require('./src/lib/cli-viewer');
 
-//const client = new Client();
-
 const Client = require('./src/client');
 const client = new Client(9432, "35.188.0.214");
 

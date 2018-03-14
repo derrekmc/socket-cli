@@ -19,5 +19,6 @@ module.exports = {
         cliv.print("");
         cliv.prompt("type");
         
+        cliv.session.chatEnabled = true;
     }
 };

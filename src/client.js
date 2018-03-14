@@ -6,14 +6,10 @@ const helper = require("./lib/helpers");
 const cliv = require("./lib/cli-viewer");
 const MESSAGE_EVENT = require('./events/MSGEvent');
 const SOCKET_EVENT = require('./events/SocketEvent');
-//const VIEW_EVENT = require('./events/ViewEvent');
 const views = require('./views');
 
+
 class Client {
-    
-    onInput (data) {
-       //log.info("onInput:",data);
-    }
     
     constructor(port, host){
         
@@ -41,6 +37,7 @@ class Client {
         NetConnection.connect(9432, '35.188.0.214', function() {
             socket.emit(SOCKET_EVENT.CONNECT);
         });
+        
         socket.on(SOCKET_EVENT.CONNECT, function() {
             clearTimeout(NetConnection.connectionTimeout);
             process.stdout.write('..connected\n-------------------------------------------\n\n');
@@ -70,6 +67,9 @@ class Client {
         
         socket.on(SOCKET_EVENT.DATA, function (data) {
             if(data && data.type && data.type !== 'heartbeat') {
+                if(data.sender == cliv.session.name) {
+                    console.log(data);
+                }
                 views.pipe(data.type, data);
                 message.emit(data.type, data);
             }
@@ -88,12 +88,12 @@ class Client {
             }
             //log.info('send', content);
             if(typeof data === 'object') {
-                data.id = name;
+                data.id = cliv.session.name;
             }
         
             let payLoad = JSON.stringify(data);
             let chunks = payLoad.split('\n');
-    
+            
             chunks.forEach(function(chunk, index, list){
                 //console.log("chunk",chunk);
                 if(chunk) {
@@ -126,57 +126,67 @@ class Client {
         process.stdin.resume();
         process.stdin.setEncoding('utf8');
         process.stdin.on('data', function(data){
-            data = helper.sanitize(data);
-            
-            let payLoad = data;
-            let obj = helper.jsonToObject(data);
-    
-            if (obj) {
-                //log.info("onInput", data);
-                socket.send(payLoad);
-                obj = JSON.parse(data);
-                payLoad = obj;
-                cliv.prompt("#");
-                
-            }else if(data.indexOf("/")!=-1){
-                
-                let request = data.split("/")[1];
-                let route = ['WELCOME', 'chat', 'exit','session'];
-                
-                if(route.indexOf(request) != -1){
-                    views.pipe(request, data);
-                    return;
-                }
-    
-                let requests = [
-                    MESSAGE_EVENT.COUNT,
-                    MESSAGE_EVENT.TIME
-                ];
-                
-                if(requests.indexOf(request) != -1){
-                    cliv.request(request);
-                    socket.send({request:request});
-                }else{
-                    cliv.alert('Invalid request');
-                    cliv.prompt("#");
-                }
-                
-            }else{
-                payLoad = {
-                    type: SOCKET_EVENT.MSG,
-                    msg: data,
-                    sender: cliv.session.name,
-                    id: cliv.session.name,
-                    date: new Date().toLocaleTimeString()
-                };
-                
-                cliv.printf(payLoad.date +' ' + cliv.session.name + ': ');
-                socket.send(payLoad);
-            }
+        
         });
         
         this.NetConnection = NetConnection;
+        this.socket = socket;
         
+    }
+    
+    onInput (data) {
+        //log.info("onInput:",data);
+        data = helper.sanitize(data);
+    
+        let payLoad = data;
+        let obj = helper.jsonToObject(data);
+    
+        if (obj) {
+            //log.info("onInput", data);
+            this.socket.send(payLoad);
+            obj = JSON.parse(data);
+            payLoad = obj;
+            cliv.prompt("#");
+        
+        }else if(data.indexOf("/")!=-1){
+        
+            let request = data.split("/")[1];
+            let route = ['WELCOME', 'chat', 'exit','session'];
+        
+            if(route.indexOf(request) != -1){
+                views.pipe(request, data);
+                return;
+            }
+        
+            let requests = [
+                MESSAGE_EVENT.COUNT,
+                MESSAGE_EVENT.TIME
+            ];
+        
+            if(requests.indexOf(request) != -1){
+                cliv.request(request);
+                this.socket.send({request:request});
+            }else{
+                cliv.alert('Invalid request');
+                cliv.prompt("#");
+            }
+        
+        }else{
+            payLoad = {
+                type: SOCKET_EVENT.MSG,
+                msg: data,
+                sender: cliv.session.name,
+                id: cliv.session.name,
+                date: new Date().toLocaleTimeString()
+            };
+        
+            if(cliv.session.chatEnabled){
+                cliv.printf(payLoad.date +' ' + payLoad.sender + ': ');
+            } else{
+                cliv.prompt("#");
+            }
+            this.socket.send(payLoad);
+        }
     }
     
     login(name){

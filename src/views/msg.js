@@ -3,22 +3,40 @@ module.exports = {
     title: "Message",
     handle: "msg",
     index: function (data) {
-    
-        if(data.msg && data.msg.time){
-            cliv.alert('Time:' + (data.msg.random  ? data.msg.random : ' ')+(data.msg.count ? data.msg.count : ' ') +(data.msg.time ?  data.msg.time : ' ') + (data.msg.date ? data.msg.date : ' '));
-        }
-    
-        if(data.msg && data.msg.count){
-            cliv.alert('Count:' + (data.msg.random  ? data.msg.random : ' ')+(data.msg.count ? data.msg.count : ' ') +(data.msg.time ?  data.msg.time : ' ') + (data.msg.date ? data.msg.date : ' '));
-        }
         
-        if(data.msg && data.msg.random > 30){
-            cliv.boat((data.msg.sender ? '' : '') + ': Random number above 30 is true! random = ' + data.msg.random);
-        }
+        let message = data.msg;
+        let repliedToMe = message.reply === cliv.session.name;
         
-        if(data.msg && data.msg.msg ){
-            cliv.print(data.date +  ' ' + data.sender + ': ' + data.msg.msg+'\n');
+        if(message){
+            // Only show me the response
+            if(message.time && repliedToMe){
+                cliv.alert('Time:  ' + (message.random  ? message.random : ' ')+(message.count ? message.count : ' ') +(message.time ?  message.time : ' ') + (message.date ? message.date : ' '));
+            }
+    
+            // Only show me the response
+            if(message.count && repliedToMe){
+                cliv.alert('Count:  ' + (message.random  ? message.random : ' ')+(message.count ? message.count : ' ') +(message.time ?  message.time : ' ') + (message.date ? message.date : ' '));
+            }
+    
+            // Only show me the response
+            if(message.random > 30 && repliedToMe){
+                cliv.boat((message.sender ? '' : '') + ': Random number above 30 is true! random = ' + message.random);
+                console.log(message);
+            }
+    
+            // dont show requests by others
+            if(message.request){
+                //cliv.alert(message.id + ': requesting - ' + message.request);
+            }
+    
+            // live chat!
+            if(message.msg && cliv.session.chatEnabled == true){
+                cliv.print(data.date +  ' ' + data.sender + ': ' + message.msg+'\n');
+            }
+            cliv.prompt('#');
+            //console.log(message);
         }
+    
         
     }
 };
