@@ -1,6 +1,6 @@
 const cliv = require("../lib/cli-viewer");
 module.exports = {
-    title: "Welcome to live cli chat",
+    title: "WELCOME to live cli chat",
     handle: "chat",
     index: function (data) {
         
@@ -13,8 +13,8 @@ module.exports = {
         cliv.header("Use the commands to navigate around:");
     
         
-        cliv.print("/welcome - to return to the welcome screen");
-        cliv.print("/menu - to return to the main menu");
+        cliv.print("/WELCOME - to return to the WELCOME screen");
+        
         cliv.print("/exit - to return to exit the program");
     
     

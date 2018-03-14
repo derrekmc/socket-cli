@@ -1,6 +1,6 @@
 const cliv = require("../lib/cli-viewer");
 module.exports = {
-    title: "Welcome",
+    title: "welcome",
     handle: "welcome",
     index: function (data) {
         if(data.msg) this.title = data.msg;
@@ -13,7 +13,7 @@ module.exports = {
         cliv.print("/count - Get to the number of requests");
         cliv.print("/time - time to see what time it is");
         cliv.print("/chat - to join a live chat room");
-        cliv.print("/welcome - to return to welcome menu");
+        cliv.print("/welcome - to return to WELCOME menu");
         cliv.print("/exit - to quite the program");
     
     

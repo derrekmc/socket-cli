@@ -60,7 +60,7 @@ class Client{
             clearTimeout(__.connectionTimeout);
             process.stdout.write('connected\n-------------------------------------------\n\n');
             
-            __.print("Welcome, Just type your name to begin.");
+            __.print("WELCOME, Just type your name to begin.");
     
             process.stdout.write('\n');
     
@@ -142,8 +142,8 @@ class Client{
                 }
                 break;
             
-            case 'welcome':
-                //console.log("Welcome", data);
+            case 'WELCOME':
+                //console.log("welcome", data);
                 this.view(data.msg, 'authenticated');
                 this.print("Use these commands to do queries on the API");
                 this.print("Enter valid json to send a query directly or");

@@ -64,22 +64,16 @@ class Client {
                 if(data && data.type && data.type === 'heartbeat') return;
                 let part = helper.jsonToObject(chunk);
                 if(part) {
-                    if(part.id == cliv.session.name) {
-                        log.error(part.id);
-                    }else{
                         socket.emit(SOCKET_EVENT.DATA, part);
-                    }
                 }else{
                     //console.log("could not parse", chunk,index, list);
                 }
             });
         });
         socket.on(SOCKET_EVENT.DATA, function (data) {
-            //log.info(SOCKET_EVENT.DATA + ' Received');
             if(data && data.type && data.type !== 'heartbeat') {
-                message.emit(data.type, data);
                 views.pipe(data.type, data);
-            
+                message.emit(data.type, data);
             }
         });
     
@@ -153,7 +147,7 @@ class Client {
             }else if(data.indexOf("/")!=-1){
                 
                 let request = data.split("/")[1];
-                let route = ['welcome', 'chat', 'exit','session'];
+                let route = ['WELCOME', 'chat', 'exit','session'];
                 
                 if(route.indexOf(request) != -1){
                     views.pipe(request, data);

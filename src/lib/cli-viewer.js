@@ -91,7 +91,7 @@ var cliViwer = {
     },
     
     boat(){
-        this.title('Random Number Aover 30 hit! ;-)');
+        this.header('Random Number Aover 30 hit! ;-)');
         process.stdout.write('\n\n\n' +
             '     ~~~             |\n' +
             '~~~~     ~~~~      -----                    |\n' +
