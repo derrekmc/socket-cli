@@ -13,7 +13,6 @@ const adapter = new (winston.Logger)({
         })
     ]
 });
-
 module.exports = adapter;
-//module.exports.winston = adapter;
+
 

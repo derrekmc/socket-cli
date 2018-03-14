@@ -9,7 +9,7 @@ describe('of Acceptance Criteria - Your program should demonstrate the following
     /**
      * (All connection information, and message traffic is logged)
      */
-    it('1. Connect and log into the system', function(done){
+    it('Connect and log into the system send command ', function(done){
     
         this.timedOut = 2000;
         log.info("connecting....");
@@ -32,7 +32,7 @@ describe('of Acceptance Criteria - Your program should demonstrate the following
             data = data.toString();
             let chunks = data.split('\n');
             chunks.forEach(function(chunk, index, list){
-                //console.log("chunk",chunk);
+                console.log("chunk",chunk);
                 let part = jsonToObject(chunk);
                 if(part) socket.emit(SOCKET_EVENT.DATA, part);
             });
@@ -86,39 +86,11 @@ describe('of Acceptance Criteria - Your program should demonstrate the following
         process.stdin.setEncoding('utf8');
     
         process.stdin.on('data', function(data){
-            NetConnection.emit(SOCKET_EVENT.DATA)
-            //sanitize input
-            //check for commands
-            //check for json
-            //send payload
+            NetConnection.emit(SOCKET_EVENT.DATA);
         });
         
     });
     
-    it('2. All messages to be send over the connection will be JSON as a single line. This is a "line delimited" protocol. Do not send linebreaks in your JSON, but explain how you will support them if you are requested to send them. You can be sent more than one message at a time by the server process.', function(done){
-        done();
-    });
-    
-    it('3. Most messages will have a type attribute to describe what they are for.', function(done){
-        done();
-    });
-    
-    it('4. Your program will need to "log in" by specifying your "name" You will identify your connection by sending a JSON object with a key / value pair of "name" / NAME. Example: { "name" : "foo" }', function(done){
-        done();
-    });
-    
-    it('5. Verify and validate input to be sent, and also handle errors sent by the server.', function(done){
-        done();
-    });
-    
-    it('6. If the random number sent back from the result of the "time" call is greater than 30, it should print out a message saying so.', function(done){
-        done();
-    });
-    
-    it('7. Provide a way to send both the "count" and "time" calls to the worker process and show the results in a nicely formatted way.', function(done){
-        done();
-        test();
-    });
     
     
 });

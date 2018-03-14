@@ -8,7 +8,6 @@ const MESSAGE_EVENT = require('./events/MSGEvent');
 const SOCKET_EVENT = require('./events/SocketEvent');
 const views = require('./views');
 
-
 class Client {
     
     constructor(port, host){
@@ -32,9 +31,7 @@ class Client {
     
         class MessageEmitter extends EventEmitter {}
         let message = new MessageEmitter();
-    
-        //this.connect(port, host);
-    
+        
         this.NetConnection = NetConnection;
         this.socket = socket;
     
@@ -128,23 +125,17 @@ class Client {
             this.reconnect();
         });
     
-        // message.on(MESSAGE_EVENT.WELCOME, function (data) {
-        //     //log.info(MESSAGE_EVENT.WELCOME, data);
-        // });
-        // message.on(MESSAGE_EVENT.MESSAGE, function (data) {
-        //     //console.log(data.msg);
-        //     //if(data.request) views.pipe(data.request, data);
-        //     //if(data.count) views.pipe(MESSAGE_EVENT.COUNT, data);
-        // });
-        // message.on(MESSAGE_EVENT.ERROR, function (err) {
-        //     cliv.alert(MESSAGE_EVENT.ERROR + ' ' + err);
-        // });
-        
-        // process.stdin.resume();
-        // process.stdin.setEncoding('utf8');
-        // process.stdin.on('data', function(data){
-        //
-        // });
+        message.on(MESSAGE_EVENT.WELCOME, function (data) {
+            //log.info(MESSAGE_EVENT.WELCOME, data);
+        });
+        message.on(MESSAGE_EVENT.MESSAGE, function (data) {
+            //console.log(data.msg);
+            //if(data.request) views.pipe(data.request, data);
+            //if(data.count) views.pipe(MESSAGE_EVENT.COUNT, data);
+        });
+        message.on(MESSAGE_EVENT.ERROR, function (err) {
+            cliv.alert(MESSAGE_EVENT.ERROR + ' ' + err);
+        });
         
         this.NetConnection = NetConnection;
         this.socket = socket;

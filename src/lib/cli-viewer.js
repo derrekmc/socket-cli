@@ -8,7 +8,7 @@ let Session = {
     }
 };
 
-var cliViwer = {
+const cliViwer = {
     
     focus: "main",
     
@@ -91,9 +91,7 @@ var cliViwer = {
         
         this.print("");
     },
-    
-    
-
+ 
     baloon(){
         
         process.stdout.write('\n\n\n' +
