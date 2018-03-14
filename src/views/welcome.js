@@ -1,6 +1,6 @@
 const cliv = require("../lib/cli-viewer");
 module.exports = {
-    title: "welcome",
+    title: "Welcome",
     handle: "welcome",
     index: function (data) {
         if(data.msg) this.title = data.msg;

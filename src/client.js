@@ -143,7 +143,7 @@ class Client {
     
         if (obj) {
             //log.info("onInput", data);
-            this.socket.send(payLoad);
+            this.socket.send(obj);
             obj = JSON.parse(data);
             payLoad = obj;
             cliv.prompt("#");
@@ -151,7 +151,7 @@ class Client {
         }else if(data.indexOf("/")!=-1){
         
             let request = data.split("/")[1];
-            let route = ['WELCOME', 'chat', 'exit','session'];
+            let route = ['welcome', 'chat', 'exit','session'];
         
             if(route.indexOf(request) != -1){
                 views.pipe(request, data);
