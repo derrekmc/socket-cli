@@ -1,452 +1,177 @@
-
 "use strict";
 const pkg = require("../package");
 const net = require('net');
-
-
+const log = require("./lib/logger");
+const helper = require("./lib/helpers");
+const cliv = require("./lib/cli-viewer");
+const MESSAGE_EVENT = require('./events/MSGEvent');
 const SOCKET_EVENT = require('./events/SocketEvent');
+//const VIEW_EVENT = require('./events/ViewEvent');
+const views = require('./views');
 
-class Client{
+class Client {
+    
+    onInput (data) {
+       //log.info("onInput:",data);
+    }
     
     constructor(port, host){
-        let __ = this;
         
-        this.heartbeatInterval;
-        this.port = this.port || port;
-        this.host = this.host || host;
-        
-        this.loggedIn = false;
-        
-        
-        this.netConnection = new net.Socket();
-        
-        this.connectionTimeout = setTimeout(function(){
-            __.onTimeout();
-        }, 8000);
-        
-        this.netConnection.connect(port, host, function () {
-          
-        
-        });
-        
-        this.connectionAttempts = 0;
-        this.maxConnectionAttempts = 5;
-        
-        this.splash('Socket Chat');
-        
-        this.view('=D- TCP Socket Cli', 'login');
-        
-        process.stdout.write("connecting to: " + host + ":" + port);
-        
-        this.netConnection.on(SOCKET_EVENT.DISCONNECT, function() {
-            __.view('Disconnect Received', SOCKET_EVENT.DISCONNECT);
+        let name = "";
+    
+        views.pipe("login", {
+            host: host,
+            port: port
         });
     
-        this.netConnection.on(SOCKET_EVENT.END, function() {
-            log.error('end');
-            __.view('Exit', SOCKET_EVENT.END, 'exit');
-        });
-        
-        this.netConnection.on(SOCKET_EVENT.ERROR, function(err) {
-            __.view('' + err, SOCKET_EVENT.ERROR);
-            
-        });
-        
-        this.netConnection.on(SOCKET_EVENT.CLOSE, function() {
-            __.view('Socket close received', SOCKET_EVENT.CLOSE);
-        });
-        
-        this.netConnection.on(SOCKET_EVENT.CONNECT, function() {
-            clearTimeout(__.connectionTimeout);
-            process.stdout.write('connected\n-------------------------------------------\n\n');
-            
-            __.print("Welcome, Just type your name to begin.");
+        let NetConnection = new net.Socket();
+        let EventEmitter = require('events');
     
-            process.stdout.write('\n');
+        class SocketEmitter extends EventEmitter {}
+        let socket = new SocketEmitter();
     
-            __.header("Login");
-            let name;
-            __.prompt("Name", name);
+        class MessageEmitter extends EventEmitter {}
+        let message = new MessageEmitter();
+    
+        NetConnection.connect(9432, '35.188.0.214', function() {
+            socket.emit(SOCKET_EVENT.CONNECT);
         });
     
-        this.netConnection.on(SOCKET_EVENT.DATA, function(data) {
-            //{"request":"count"}
-            if(IsJsonString(data)){
+        NetConnection.on(SOCKET_EVENT.DATA, function(data) {
+            // clean up data, events, flow because the server is sending garbage
+            data = data.toString();
+            let chunks = data.split('\n');
+            chunks.forEach(function(chunk, index, list){
+                //console.log("chunk",chunk);
+                let part = helper.jsonToObject(chunk);
+                if(part) socket.emit(SOCKET_EVENT.DATA, part);
+            });
+        });
+    
+        socket.on(SOCKET_EVENT.CONNECT, function() {
+            //log.info("connected");
+            process.stdout.write("..connected");
+            let payLoad = {name:"derrek"};
+            socket.send({name:"derrek"});
+        });
+        
+        socket.on(SOCKET_EVENT.DATA, function (data) {
+            //log.info(SOCKET_EVENT.DATA + ' Received');
+            if(data && data.type && data.type !== 'heartbeat') {
                 
-                let obj = JSON.parse(data);
-    
-                if(obj['type'] != "heartbeat")  {
-                    //log.verbose('onData: ' + data);
-                    __.updateView(obj['type'], obj);
-                }
-                
+                views.pipe(data.type, data);
+                message.emit(data.type, data);
             }
         });
     
-        
-        process.stdout.write("..");
-        
-    }
+        NetConnection.on('close', function() {
+            log.info('connection closed');
+        });
     
-    updateView(viewHandle, data){
-        //log.verbose('updateView', viewHandle, data);
-        if(!viewHandle) {
-            log.error('Error in updateView(viewHandle). No viewHandle passed.');
-            return false;
-        }
-        viewHandle = viewHandle || this.currentView.handle;
-        
-        this.currentView.handle = viewHandle;
-        this.currentView.data = data;
-        
-        this.__onUpdateView(viewHandle, data);
-    }
+        NetConnection.on('error', function(err) {
+            log.error('connection error', err);
+        });
     
-    __onUpdateView(viewHandle, data) {
-        //log.info('__onUpdateView', viewHandle);
-        
-        this.currentView.handle = viewHandle || this.currentView.handle;
-        this.currentView.data = data || this.currentView.data;
-        
-        viewHandle = this.currentView.handle;
-        data = this.currentView.data;
-        
-        switch (viewHandle) {
+        socket.send = function(data){
+            /**
+             * Check for empty string or null
+             */
+            if(!data) {
+                cliv.splash('Nothing to send');
+                return;
+            }
+            if(!data || data == "" || data === null || data==='\n') {
+                return false;
+            }
+            //log.info('send', content);
+            if(typeof data === 'object') data.id = name;
             
-            case 'login':
-                if (this.login(data)) {
-                    if (IsJsonString(data)) {
-                        this.send(data);
-                    } else {
-                        log.warn("Please enter your name to continue");
-                    }
-                }
-                break;
-            
-            case 'welcome':
-                //console.log("Welcome", data);
-                this.view(data.msg, 'authenticated');
-                this.header("Use these commands to do queries on the API");
-                this.print("/count - Get to the number of requests on this worker");
-                this.print("/time - time to see what time it is");
-                this.print("/chat - to join a live chat room");
-                this.print("/menu - to return to this menu");
-                this.print("");
-                this.prompt("#");
-                this.loggedIn = true;
-                //var payLoad = '{"type":"' + SOCKET_EVENT.MSG + '","msg":"@all - "' + this.name + ' just joined the chat!"}'.replace(/\n/g, '');
-                //this.send(payLoad);
-                break;
-            
-            case 'msg':
-                this.printf('\n - ' + data.date + ' | ' + data.sender + ': ' + data.msg.msg + '');
-                this.prompt("");
-                break;
-            
-            case 'authenticated':
-                //console.log('VIEW', viewHandle);
-                this.view("Socket Cli - COMMANDS", "chat");
-                
-                this.print("/count");
-                this.print("/time");
-                
-                break;
-            
-            case 'error':
-                this.view("Error", "error");
-                this.dialog(data.result);
-                
-                this.prompt("#");
-                break;
-            
-            case 'exit':
-                this.view("Application Quit", "exit");
-                break;
-            
-            default:
-                
-                this.view("No View Specified");
-                
-                this.print("/count");
-                this.print("/time");
-                
-                this.prompt("#");
-                this.send(payLoad);
-            
-            
-            
-        }
-        
-    }
-    
-    onInput(data){
-        
-        //log.info("onInput", data);
-    
-        data = this.sanitize(data);
-        
-        //Object.assign(dto, data);
-        
-        let payLoad = data;
-        let obj = {};
-        
-        if(IsJsonString(data)) {
-            //log.info("onInput", data);
-            this.send(payLoad);
-            obj = JSON.parse(data);
-            payLoad = obj;
-            this.updateView(obj.type, obj);
-            
-            this.prompt(" ");
-        }else{
-            payLoad = {
-                type: SOCKET_EVENT.MSG,
-                msg: data,
-                sender: this.name,
-                id: this.name,
-                date: new Date().toLocaleTimeString()
-            };
-            process.stdout.write('\n ---- ' + payLoad.date + ' | ' + payLoad.sender + ': ' + payLoad.msg + ' ');
-            this.send(payLoad);
-            this.prompt(" ");
-        }
-    
-       
-        
-        
-    }
-    
-    send(data){
-        /**
-         * Check for empty string or null
-         */
-        if(!data) {
-            this.splash('Nothing to send');
-            return;
-        }
-        if(!data || data == "" || data === null || data==='\n') {
-            return false;
-        }
-        
-        
-        
-        // if(IsJsonString(data)){
-        //     let payLoad = data;
-        //     //payLoad = data.replace(/\n/g,'');
-        //     this.send(payLoad);
-        //     this.prompt("#");
-        //     this.netConnection.write(payLoad);
-        // }else{
-        //     let payLoad = '{"type":"'+SOCKET_EVENT.MSG+'","id":"'+data+'"}'.replace(/\n/g,'');
-        //     payLoad = payLoad.replace(/\n/g,'');
-        //     this.send(payLoad);
-        //     this.prompt("#");
-        //     this.netConnection.write(payLoad);
-        // }
-        
-        
-        this.netConnection.write(JSON.stringify(data));
-        //log.info('send: ' + data);
-    }
-    
-    sanitize(input){
-        return input.replace(/\n/g,'');
-    }
-    
-    printc(data){
-        if(data['msg'] && data['msg']['msg']){
-            process.stdout.write('\n' + data['date'] + ' | ' + data['sender'] + ': ' + data['msg']['msg'] + '');
-        }else{
-            process.stdout.write('\n' + new Date().toLocaleTimeString() + ' | ' + this.name + ': ' + data.msg + '');
-        }
-    }
-    
-    
-    
-    
-    onConnect(){
-    
-    
-    }
-    
-    login(name){
-        name = name.replace(/\n/g,'');
-        if(!name) {
-            //this.alert('No name passed to login');
-            return false;
-        }
-        
-        if(this.loggedIn) return true;
-        
-        this.name = name;
-        
-        this.netConnection.write('{"name":"'+name+'"}');
-        
-        //log.info(name + " paste some json and hit enter to send a request");
-        
-    }
-    
-     getFocus(){
-        return this.focus;
-    }
-    
-     setFocus(name){
-        this.focus = name;
-    }
-    
-    header(title){
-        process.stdout.write('\n' + title);
-        process.stdout.write('\n-------------------------------------------\n');
-    }
-    
-    splash(title){
-        this.setFocus(title);
-        this.clear();
-        process.stdout.write('\n-------------------------------------------\n');
-        process.stdout.write('\n\n  ' + title + '\n\n');
-        process.stdout.write('\n-------------------------------------------\n');
-        process.stdout.write('\n\n\n\n');
-    }
-    
-    view(title, handle){
-        this.focus = title;
-        this.currentView = {
-            title: title,
-            handle: handle
+            let payLoad = JSON.stringify(data);
+            NetConnection.write(payLoad);
         };
-        this.clear();
-        process.stdout.write('\n-------------------------------------------\n');
-        process.stdout.write('\n  ' + title + '\n');
-        process.stdout.write('\n-------------------------------------------\n');
-        //process.stdout.write('\n');
-    }
     
-    dialog(title){
-        this.setFocus(title);
-        process.stdout.write('\n\n-------------------------------------------\n');
-        process.stdout.write('\n\n   ' + title + '\n\n');
-        process.stdout.write('\n-------------------------------------------\n');
-    }
+        message.on(MESSAGE_EVENT.WELCOME, function (data) {
+            //log.info(MESSAGE_EVENT.WELCOME, data);
+            //socket.send({request:"time"});
+        });
+        message.on(MESSAGE_EVENT.MESSAGE, function (data) {
+            //console.log(data.msg);
+            //cliv.print(data.date + " - " + data.sender +": " + data.msg.random + data.msg.time)
+        });
+        message.on(MESSAGE_EVENT.ERROR, function (err) {
+            log.error(MESSAGE_EVENT.ERROR, err);
+        });
     
-    clear(){
-        process.stdout.write(
-            '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n' +
-            '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n');
-            
-    }
     
-    alert(message){
         
-        process.stdout.write('\n\n!-----------------------------------------!\n');
-        process.stdout.write('| ' + message + '\n');
-        process.stdout.write('!-----------------------------------------!\n');
-    }
+        process.stdin.resume();
+        process.stdin.setEncoding('utf8');
+        process.stdin.on('data', function(data){
+            data = helper.sanitize(data);
+            
+            let payLoad = data;
+            let obj = helper.jsonToObject(data);
     
-    prompt(message, variable){
-        process.stdout.write('\n'+message + ': ' );
-    }
+            if (obj) {
+                //log.info("onInput", data);
+                socket.send(payLoad);
+                obj = JSON.parse(data);
+                payLoad = obj;
+                cliv.prompt("#");
+            }else if(data.indexOf("/")!=-1){
+                
+                let request = data.split("/")[1];
+                
+                
+                
+                let route = ['welcome', 'chat', 'exit'];
+                
+                if(route.indexOf(request) != -1){
+                    views.pipe(request, data);
+                }
     
-    printf(message){
-        process.stdout.write(message);
-    }
+                let requests = [
+                    MESSAGE_EVENT.COUNT,
+                    MESSAGE_EVENT.TIME
+                ];
+                if(requests.indexOf(request) != -1){
+                    cliv.request(request);
+                    socket.send({request: request});
+                }else{
+                    cliv.alert('Invalid Entry Cannot Send');
+                    cliv.prompt("#");
+                }
+                
+                
+            }else{
+                payLoad = {
+                    type: SOCKET_EVENT.MSG,
+                    msg: data,
+                    sender: name,
+                    id: name,
+                    date: new Date().toLocaleTimeString()
+                };
+                cliv.print('\n - ' + payLoad.date + ' | ' + payLoad.sender + ': ' + payLoad.msg + ' ');
+                socket.send(payLoad);
+                cliv.prompt("#");
+            }
+        });
     
-    print(message){
-        process.stdout.write('\n'+message+ '');
-    }
     
+        
     
-    
-    onError(err){
-        log.error(err);
-    }
-    
-    onReconnect(){
-        log.debug("socket reconnected");
-    }
-    
-    onTimeout(){
-        log.error("connection timed out");
-    }
-    
-    onDisconnect(){
-        this.netConnection.destroy();
-        console.log("disconnected");
+        
+        
     }
     
     deconstructor(){
-        this.onDisconnect();
-        this.loggedIn = false;
+        //NetConnection.destroy();
+        cliv.exit();
     }
     
-}
-
-global.isFunction = function isFunction(functionToCheck) {
-    var getType = {};
-    if(functionToCheck) return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
-};
-
-global.isArray = function isArray(arrayToCheck) {
-    var getType = {};
-    if(arrayToCheck) return arrayToCheck && getType.toString.call(arrayToCheck) === '[object Array]';
-};
-
-global.requiredFields = function requiredFields(object, requiredFieldsArray, callback){
-    if(!callback) callback = function(){};
-    if(isArray(requiredFieldsArray)) {
-        var foundFields = new Array();
-        for(var i in object){
-            for(var j in requiredFieldsArray){
-                if(i == requiredFieldsArray[j]){
-                    foundFields.push(requiredFieldsArray[j]);
-                }
-            }
-        }
-        if(foundFields.length == requiredFieldsArray.length){
-            callback(null);
-            return null;
-        }else{
-            //var diff = _.difference(object, requiredFieldsArray);
-            var error = "Missing one of the required fields(" + requiredFieldsArray.toString() + ")\n Fields Found: (" + foundFields.toString() + ")";
-            callback(error);
-            return error;
-        }
-    }else{
-        var error = "requireFields param 2 is not an Array";
-        if(isFunction(callback)) callback(error);
-        return error;
-    }
+    
     
 };
 
-global.objectValue = function valueFromObject(object, field){
-    if(object){
-        if(object.hasOwnProperty(field)){
-            return object[field];
-        }else{
-            return false;
-        }
-    }else{
-        return false;
-    }
-}
-
-function IsJsonString(str) {
-    try {
-        JSON.parse(str);
-    } catch (e) {
-        return false;
-    }
-    return true;
-}
-
-function jsonToObject(str) {
-    let object;
-    try {
-        object = JSON.parse(str);
-    } catch (e) {
-        return false;
-    }
-    return object;
-}
 //const client = new Client();
 module.exports = Client;
