@@ -45,8 +45,8 @@ class Client {
         // NetConnection.connect(port, host, function() {
         //     socket.emit(SOCKET_EVENT.CONNECT);
         // });
-       
-        this.connect(port, host);
+    
+        __.connect(port, host);
         
         socket.on(SOCKET_EVENT.CONNECT, function() {
             clearTimeout(NetConnection.connectionTimeout);
@@ -112,17 +112,17 @@ class Client {
         
         NetConnection.on('close', function() {
             log.error('connection closed');
-            this.reconnect();
+            __.reconnect();
         });
     
         NetConnection.on('error', function(err) {
             log.error('connection error', err)
-            this.reconnect();
+            __.reconnect();
         });
 
         NetConnection.on('end', function() {
             log.error('end program received');
-            this.reconnect();
+            __.reconnect();
         });
     
         message.on(MESSAGE_EVENT.WELCOME, function (data) {
@@ -231,7 +231,7 @@ class Client {
             if(this.connectionAttempts > 2) cliv.alert("Attempting #" + this.connectionAttempts + " to reconnect");
             
             this.reconnectTimer = setTimeout(function () {
-                _.connect(this.port, this.host);
+                __.connect(this.port, this.host);
             }, 5000);
         }else{
             this.disconnect();
