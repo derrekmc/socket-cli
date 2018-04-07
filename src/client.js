@@ -38,6 +38,14 @@ class Client {
         this.maxConnectionAttempts = 20;
         this.connectionAttempts = 0;
         
+        // NetConnection.connectionTimeout = setTimeout(function(){
+        //     __.onTimeout();
+        // }, 8000);
+        //
+        // NetConnection.connect(port, host, function() {
+        //     socket.emit(SOCKET_EVENT.CONNECT);
+        // });
+       
         this.connect(port, host);
         
         socket.on(SOCKET_EVENT.CONNECT, function() {
@@ -54,10 +62,13 @@ class Client {
             data = data.toString();
             let chunks = data.split('\n');
             chunks.forEach(function(chunk, index, list){
+                //console.log("chunk",chunk);
                 if(data && data.type && data.type === 'heartbeat') return;
                 let part = helper.jsonToObject(chunk);
                 if(part) {
                         socket.emit(SOCKET_EVENT.DATA, part);
+                }else{
+                    //console.log("could not parse", chunk,index, list);
                 }
             });
         });
@@ -92,6 +103,8 @@ class Client {
                 //console.log("chunk",chunk);
                 if(chunk) {
                     NetConnection.write(chunk + '\n');
+                }else{
+                    //console.log("could not parse", chunk,index, list);
                 }
             });
            
@@ -110,6 +123,18 @@ class Client {
         NetConnection.on('end', function() {
             log.error('end program received');
             this.reconnect();
+        });
+    
+        message.on(MESSAGE_EVENT.WELCOME, function (data) {
+            //log.info(MESSAGE_EVENT.WELCOME, data);
+        });
+        message.on(MESSAGE_EVENT.MESSAGE, function (data) {
+            //console.log(data.msg);
+            //if(data.request) views.pipe(data.request, data);
+            //if(data.count) views.pipe(MESSAGE_EVENT.COUNT, data);
+        });
+        message.on(MESSAGE_EVENT.ERROR, function (err) {
+            cliv.alert(MESSAGE_EVENT.ERROR + ' ' + err);
         });
         
         this.NetConnection = NetConnection;

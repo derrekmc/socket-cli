@@ -1,6 +1,5 @@
 # socket-cli
-##### Node cli socket server
-#
+##### Node cli socket server & request sender and live chat
 #
 ---
 #
@@ -13,9 +12,4 @@ npm start
 ### Test
 ```
 npm test
-```
-
-### Environmental Variables
-
-`name` - Your name to avoid prompts
 ```
